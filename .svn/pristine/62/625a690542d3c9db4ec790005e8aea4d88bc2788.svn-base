@@ -1,0 +1,128 @@
+#include <lcom/lcf.h>
+#include <lcom/timer.h>
+
+#include <stdint.h>
+
+#include "i8254.h"
+
+int (timer_set_frequency)(uint8_t timer, uint32_t freq) {
+  
+  if (timer<0 || timer>2)
+		return 1;
+
+  uint8_t MSB;
+  uint8_t LSB;
+
+	uint32_t value = 1193181/ freq;
+
+  util_get_MSB(value, &MSB);
+  util_get_LSB(value, &LSB);
+
+  uint32_t byte1;
+  sys_inb(TIMER_CTRL, &byte1); //byte1 contem estado do timer
+
+  switch (timer)
+  {
+    case 0:
+      byte1 = (byte1 & 0x0f) | TIMER_0 | TIMER_LSB_MSB;
+      sys_outb(TIMER_CTRL, byte1);
+      sys_outb(TIMER_0, LSB);
+      sys_outb(TIMER_0, MSB);
+
+    case 1:
+      byte1 = (byte1 & 0x0f) | TIMER_1 | TIMER_LSB_MSB;
+      sys_outb(TIMER_CTRL, byte1);
+      sys_outb(TIMER_1, LSB);
+      sys_outb(TIMER_1, MSB);
+
+    case 2:
+      byte1 = (byte1 & 0x0f) | TIMER_2 | TIMER_LSB_MSB;
+      sys_outb(TIMER_CTRL, byte1);
+      sys_outb(TIMER_2, LSB);
+      sys_outb(TIMER_2, MSB);
+  }
+
+  return 0;
+}
+
+int (timer_subscribe_int)(uint8_t *UNUSED(bit_no)) {
+  /* To be completed by the students */
+  printf("%s is not yet implemented!\n", __func__);
+
+  return 1;
+}
+
+int (timer_unsubscribe_int)() {
+  /* To be completed by the students */
+  printf("%s is not yet implemented!\n", __func__);
+
+  return 1;
+}
+
+void (timer_int_handler)() {
+  /* To be completed by the students */
+  printf("%s is not yet implemented!\n", __func__);
+}
+
+int (timer_get_conf)(uint8_t timer, uint8_t *st) {
+
+  if (timer < 0 || timer > 2)
+		{
+    printf("Please insert a valid timer");
+     return 1;
+    }
+ 
+  unsigned long rbc = TIMER_RB_CMD | TIMER_RB_SEL(timer) | TIMER_RB_COUNT_;
+  unsigned int rbc2;
+
+  if (sys_outb(TIMER_CTRL, rbc) != 0)
+   {
+      printf("Error in sys_outb");
+      return 1;
+   }
+   
+  if (sys_inb(TIMER_0 + timer, &rbc2))
+  {
+      printf("Error in sys_inb");
+      return 1;
+  }
+  
+  *st = (uint8_t) rbc2;
+
+  return 0;
+}
+
+int (timer_display_conf)(uint8_t timer, uint8_t st,
+                        enum timer_status_field field) {
+  
+  union timer_status_field_val u;
+
+  if (field == all)
+  {
+    u.byte = st;
+  }
+  else if (field == initial)
+  {
+    u.in_mode = (st & (BIT(4) | BIT(5))) >> 4;
+  }
+  else if (field == mode)
+  {
+    u.count_mode = (st & (BIT(1) | BIT(2) | BIT(3))) >> 1;
+  }
+  else if (field == base)
+  {
+    u.bcd = st & BIT(0);
+  }
+  else printf("Field is not valid");
+
+  int error_message = timer_print_config(timer,field, u);
+
+
+  if (error_message != 0)
+  {
+    printf("Error in sys_inb");
+    return error_message;
+  }
+  
+  return 0;
+}
