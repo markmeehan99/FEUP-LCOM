@@ -38,6 +38,8 @@ int keyboard_unsubscribe_int() {
     printf("Failed to unsubscribe the interrupt of the associated hook.\n");
     return 1;
   }
+  printf("Copiem menos\n");
+  printf("Praxe por github vale? :(\n");
   return 0;
 }
 
